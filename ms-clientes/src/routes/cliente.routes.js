@@ -1,30 +1,30 @@
-import express from "express";
-import * as clientesController from "../controller/cliente.controller.js";
-import { validarID } from "../middlewares/validate.middleware.js";
-import { validateApiKey } from "../middlewares/auth.js";
+const express = require('express')
+const clientesController = require('../controller/cliente.controller')
+const { validarID } = require('../middlewares/validate.middleware')
+const { validateApiKey } = require('../middlewares/auth')
 
-const router = express.Router();
+const router = express.Router()
 
 // todas rotas exigem API key
-router.post("/clientes", validateApiKey, clientesController.cadastrar_cliente);
-router.get("/clientes", validateApiKey, clientesController.listar_clientes);
+router.post('/clientes', validateApiKey, clientesController.cadastrar_cliente)
+router.get('/clientes', validateApiKey, clientesController.listar_clientes)
 router.get(
-  "/clientes/:id",
+  '/clientes/:id',
   validateApiKey,
   validarID,
   clientesController.buscar_cliente,
-);
+)
 router.delete(
-  "/clientes/:id",
+  '/clientes/:id',
   validateApiKey,
   validarID,
   clientesController.deletar_cliente,
-);
+)
 router.put(
-  "/clientes/:id",
+  '/clientes/:id',
   validateApiKey,
   validarID,
   clientesController.atualizar_cliente,
-);
+)
 
-export default router;
+module.exports = router

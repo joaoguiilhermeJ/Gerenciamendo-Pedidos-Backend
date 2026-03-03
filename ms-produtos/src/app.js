@@ -1,12 +1,16 @@
-import express from "express";
-import cors from "cors";
-import produtosRoutes from "./routes/produto.routes.js";
+const express = require('express')
+const cors = require('cors')
+const produtosRoutes = require('./routes/produto.routes')
 
-const app = express();
+const app = express()
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
 
-app.use("/produtos", produtosRoutes);
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', service: 'ms-produtos', timestamp: new Date().toISOString() })
+})
 
-export default app;
+app.use('/produtos', produtosRoutes)
+
+module.exports = app

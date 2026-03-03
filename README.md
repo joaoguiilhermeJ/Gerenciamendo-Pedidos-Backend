@@ -1,90 +1,53 @@
-# Sistema de Gerenciamento de Pedidos 🚀
+# Sistema de Pedidos - Backend (Microserviços) 🚀
 
-Um sistema completo de gerenciamento de pedidos (produtos, clientes e pedidos) construído com uma arquitetura de microserviços e um frontend moderno preparado via Vite.
+Arquitetura de microserviços pronta para produção (Render + Neon).
 
-## 📋 Arquitetura
+## 📋 Microserviços
+- **api-gateway**: Porta de entrada única (Proxy Reverso).
+- **ms-clientes**: Gerenciamento de clientes.
+- **ms-produtos**: Gerenciamento de produtos e estoque.
+- **ms-pedidos**: Orquestração de pedidos.
 
-Este projeto é dividido em quatro partes principais:
+## 🔑 Segurança (API Key)
+O sistema utiliza um header fixo `x-api-key` para segurança:
+1. O **API Gateway** valida a chave antes de encaminhar qualquer requisição.
+2. Os **microserviços** também possuem validação interna para garantir que apenas o Gateway (ou chamadas autorizadas) acesse os dados.
+3. Use a mesma `API_KEY` em todos os serviços no Render para consistência.
 
-- **`frontend/`**: Aplicação client-side desenvolvida em HTML, CSS e Vanilla JavaScript servido através do Vite. Ele se comunica de forma integrada com os vários microserviços através de um único `apiService`.
-- **`ms-clientes/`**: Microserviço responsável por gerenciar os dados dos clientes.
-- **`ms-produtos/`**: Microserviço responsável pelo cadastro, edição e controle de estoque de produtos.
-- **`ms-pedidos/`**: Microserviço responsável pelo gerenciamento dos pedidos feitos pelos clientes.
+## 🚀 Ordem de Deploy
+1. **Bancos no Neon**: Crie os bancos `db_clientes`, `db_produtos` e `db_pedidos`.
+2. **Microserviços Base**: Suba `ms-clientes` e `ms-produtos` no Render.
+3. **Microserviço Pedidos**: Suba `ms-pedidos` (informando as URLs dos dois acima).
+4. **API Gateway**: Suba por último (informando as URLs de todos os microserviços).
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Variáveis de Ambiente (Render)
 
-### Frontend
-- **HTML5 e CSS3**
-- **JavaScript Moderno (ES6 Modules)**
-- **Vite** (Ambiente de desenvolvimento rápido)
+| Variável | Descrição |
+| --- | --- |
+| `PORT` | Definida automaticamente pelo Render (usamos 10000 como fallback) |
+| `DATABASE_URL` | String de conexão do Neon (com `?sslmode=require`) |
+| `API_KEY` | Sua chave secreta para o header `x-api-key` |
+| `CLIENTES_URL` | URL base do ms-clientes (ex: `https://ms-clientes.onrender.com`) |
+| `PRODUTOS_URL` | URL base do ms-produtos |
+| `PEDIDOS_URL` | URL base do ms-pedidos |
+| `FRONTEND_URL` | URL da Vercel (apenas para o api-gateway) |
+| `NODE_ENV` | Definir como `production` |
 
-### Backend (Microserviços)
-- **Node.js** com **Express**
-- **Sequelize** (ORM para interagir com o banco de dados)
-- Banco de dados relacional flexível (configurado para suportar PostgreSQL/SQLite)
-- **Axios** (Para possível comunicação entre os microserviços, se aplicável)
-- **CORS** & **Dotenv**
+## 🧪 Como Testar (Via Gateway)
 
-## 📂 Estrutura do Repositório
+Substitua `URL_GATEWAY` pela URL do Render e `SUA_CHAVE` pela `API_KEY` configurada.
 
-```text
-/
-├── frontend/        # Interface com o usuário (Vite, HTML, CSS, JS)
-├── ms-clientes/     # Microserviço de Clientes (Node.js/Express)
-├── ms-pedidos/      # Microserviço de Pedidos (Node.js/Express)
-├── ms-produtos/     # Microserviço de Produtos (Node.js/Express)
-└── README.md        # Este arquivo
-```
-
-## 🚀 Como Executar o Projeto Localmente
-
-Para rodar esta aplicação por completo, você deve inicializar o frontend e todos os microserviços simultaneamente.
-
-> **Pré-requisitos:** Certifique-se de ter o [Node.js](https://nodejs.org/) instalado em sua máquina.
-
-### 1. Inicializando os Microserviços (Backend)
-
-Em um terminal separado para cada microserviço, acesse as pastas e execute:
-
-**Microserviço de Clientes:**
+**Health Check:**
 ```bash
-cd ms-clientes
-npm install
-npm run dev
+curl https://URL_GATEWAY/api/health
 ```
 
-**Microserviço de Produtos:**
+**Listar Produtos:**
 ```bash
-cd ms-produtos
-npm install
-npm run dev
+curl -H "x-api-key: SUA_CHAVE" https://URL_GATEWAY/api/v1/products
 ```
 
-**Microserviço de Pedidos:**
+**Status dos Microserviços:**
 ```bash
-cd ms-pedidos
-npm install
-npm run dev
+curl -H "x-api-key: SUA_CHAVE" https://URL_GATEWAY/api/health/services
 ```
-
-*Nota: Certifique-se de configurar qualquer variável de ambiente (como arquivo `.env` contendo chaves ou strings de conexão com o banco de dados) de acordo com o padrão do projeto dentro das subpastas das APIs.*
-
-### 2. Inicializando o Frontend
-
-Abra um novo terminal para rodar a aplicação frontend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-O Vite subirá um servidor local (geralmente em `http://localhost:5173`). Acesse este link pelo navegador.
-
-## 💡 Funcionalidades Principais
-- **Clientes**: Listagem, criação, edição e exclusão de clientes.
-- **Produtos**: Controle completo de produtos através do sistema, com visibilidade de disponibilidade em estoque e edições gerais.
-- **Pedidos**: Interface automatizada para efetuar pedidos baseados nos clientes e estoques de produtos disponíveis.
-- **Resiliência Básica**: O frontend avisa o usuário (amigavelmente) no caso de o microserviço/servidor estar fora de alcance.
-
-## 👤 Autor
-Desenvolvido por você. Sinta-se à vontade para enviar issues ou pull requests para melhorias do sistema!

@@ -1,22 +1,21 @@
-import 'dotenv/config';
-import app from './app.js';
-import sequelize from './config/database.js';
+require('dotenv').config()
+const app = require('./app')
+const sequelize = require('./config/database')
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001
 
 async function startServer() {
     try {
-        
-        await sequelize.sync({ force: false });
-        console.log('Banco de dados SQLite sincronizado.');
+        await sequelize.sync({ force: false })
+        console.log('Banco de dados sincronizado.')
 
         app.listen(PORT, () => {
-            console.log(`Microserviço de Clientes rodando na porta ${PORT}`);
-        });
+            console.log(`Microserviço de Clientes rodando na porta ${PORT}`)
+        })
     } catch (error) {
-        console.error('Falha ao iniciar o servidor:', error);
-        process.exit(1); 
+        console.error('Falha ao iniciar o servidor:', error)
+        process.exit(1)
     }
 }
 
-startServer();
+startServer()

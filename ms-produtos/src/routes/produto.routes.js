@@ -1,36 +1,35 @@
-import express from "express";
-import * as produtosController from "../controller/produto.controller.js";
-import { validarID } from "../middlewares/validate.middleware.js";
-import { validateApiKey } from "../middlewares/auth.js";
+const express = require('express')
+const produtosController = require('../controller/produto.controller')
+const { validarID } = require('../middlewares/validate.middleware')
+const { validateApiKey } = require('../middlewares/auth')
 
-const router = express.Router();
+const router = express.Router()
 
-
-router.post("/", validateApiKey, produtosController.cadastrar_produto);
-router.get("/", validateApiKey, produtosController.listar_produtos);
+router.post('/', validateApiKey, produtosController.cadastrar_produto)
+router.get('/', validateApiKey, produtosController.listar_produtos)
 router.get(
-  "/:id",
+  '/:id',
   validateApiKey,
   validarID,
   produtosController.buscar_produto,
-);
+)
 router.put(
-  "/:id",
+  '/:id',
   validateApiKey,
   validarID,
   produtosController.atualizar_produto,
-);
+)
 router.delete(
-  "/:id",
+  '/:id',
   validateApiKey,
   validarID,
   produtosController.deletar_produto,
-);
+)
 router.patch(
-  "/:id",
+  '/:id',
   validateApiKey,
   validarID,
   produtosController.atualizar_estoque,
-);
+)
 
-export default router;
+module.exports = router

@@ -1,35 +1,35 @@
-import { Router } from "express";
-import * as pedidoController from "../controller/pedido.controller.js";
-import { validateApiKey } from "../middlewares/auth.js";
-import { validarID } from "../middlewares/validate.middleware.js";
+const express = require('express')
+const pedidoController = require('../controller/pedido.controller')
+const { validateApiKey } = require('../middlewares/auth')
+const { validarID } = require('../middlewares/validate.middleware')
 
-const router = Router();
+const router = express.Router()
 
-router.post("/", validateApiKey, pedidoController.criar_pedido);
-router.get("/", validateApiKey, pedidoController.listar_todos);
+router.post('/', validateApiKey, pedidoController.criar_pedido)
+router.get('/', validateApiKey, pedidoController.listar_todos)
 router.get(
-  "/cliente/:idCliente",
+  '/cliente/:idCliente',
   validateApiKey,
   validarID,
   pedidoController.listar_por_cliente,
-);
+)
 router.post(
-  "/:id/entregar",
+  '/:id/entregar',
   validateApiKey,
   validarID,
   pedidoController.entregar_pedido,
-);
+)
 router.delete(
-  "/:id",
+  '/:id',
   validateApiKey,
   validarID,
   pedidoController.cancelar_pedido,
-);
+)
 router.put(
-  "/:id",
+  '/:id',
   validateApiKey,
   validarID,
   pedidoController.atualizar_pedido,
-);
+)
 
-export default router;
+module.exports = router

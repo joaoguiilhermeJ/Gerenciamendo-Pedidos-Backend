@@ -1,7 +1,7 @@
-import { DataTypes } from 'sequelize';
-import  sequelize  from '../config/database.js';
+const { DataTypes } = require('sequelize')
+const sequelize = require('../config/database')
 
-export const Cliente = sequelize.define('Cliente', {
+const Cliente = sequelize.define('Cliente', {
   idCliente: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -10,29 +10,29 @@ export const Cliente = sequelize.define('Cliente', {
   },
   nomeCliente: {
     type: DataTypes.STRING,
-    allowNull: false, 
+    allowNull: false,
     validate: {
-      notEmpty: { msg: "O nome do cliente não pode ser vazio." }
+      notEmpty: { msg: 'O nome do cliente não pode ser vazio.' }
     }
   },
   contato: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      notEmpty: { msg: "O contato é obrigatório." }
+      notEmpty: { msg: 'O contato é obrigatório.' }
     }
   },
   documento: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true, 
+    unique: true,
     validate: {
-      notEmpty: { msg: "O documento é obrigatório para o cadastro." }
+      notEmpty: { msg: 'O documento é obrigatório para o cadastro.' }
     }
   }
 }, {
   tableName: 'Cliente',
-  timestamps: true, 
-});
+  timestamps: true,
+})
 
-export default Cliente;
+module.exports = { Cliente }
