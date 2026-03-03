@@ -7,25 +7,35 @@ const env = require('./config/env')
 
 const app = express()
 
-// Configurações Globais
+const allowedOrigins = [
+  'http://localhost:5173',
+  env.FRONTEND_URL
+].filter(Boolean)
+
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? env.FRONTEND_URL : true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+
+    return callback(new Error('Not allowed by CORS'))
+  }
 }))
+
+app.use(express.json())
 app.use(loggerMiddleware)
 
-// Roteamento
-// Todas as rotas do gateway começam com /api
 app.use('/api', gatewayRoutes)
 
-// Fallback para rotas não encontradas no gateway
 app.use((req, res) => {
-    res.status(404).json({
-        error: true,
-        message: 'Rota não encontrada no API Gateway'
-    })
+  res.status(404).json({
+    error: true,
+    message: 'Rota não encontrada no API Gateway'
+  })
 })
 
-// Tratamento de Erros
 app.use(errorMiddleware)
 
 module.exports = app
