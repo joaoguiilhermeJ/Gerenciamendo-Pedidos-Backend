@@ -1,0 +1,2 @@
+// Reservado para lógica de controle caso o gateway precise de endpoints próprios
+module.exports = {}

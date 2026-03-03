@@ -1,0 +1,2 @@
+// Reservado para serviços auxiliares internos do gateway
+module.exports = {}

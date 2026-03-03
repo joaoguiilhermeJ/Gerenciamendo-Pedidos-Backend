@@ -1,0 +1,12 @@
+<<<<<<< HEAD
+node_modules
+.env
+.env.*
+dist
+coverage
+.DS_Store
+=======
+**/node_modules/
+**/.env
+**/*.sqlite
+>>>>>>> cfcc8f35c20e5743f5c024e5ae75152ec9b0a9df
