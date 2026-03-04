@@ -11,7 +11,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'ms-pedidos',
-    timestamp: new Date().toISOString()
+    timestamp: new Date()
   })
 })
 
@@ -23,7 +23,32 @@ app.use((req, res) => {
     status: 'error',
     message: 'Rota não encontrada'
   })
-})
+})joao @fedora: ~/Downloads/squashfs - root / opt / pt / bin$ curl https://gp-ms-clientes.onrender.com/clientes
+{ "erro": "API key inválida." }joao @fedora: ~/Downloads/squashfs - root / opt / pt / bin$ curl https://gp-ms-clientes.onrender.com/produtos
+< !DOCTYPE html >
+  <html lang="en">
+    <head>
+      <meta charset="utf-8">
+        <title>Error</title>
+    </head>
+    <body>
+      <pre>Cannot GET /produtos</pre>
+    </body>
+  </html>
+joao @fedora: ~/Downloads/squashfs - root / opt / pt / bin$ curl https://gp-ms-clientes.onrender.com/pedidos
+< !DOCTYPE html >
+  <html lang="en">
+    <head>
+      <meta charset="utf-8">
+        <title>Error</title>
+    </head>
+    <body>
+      <pre>Cannot GET /pedidos</pre>
+    </body>
+  </html>
+joao @fedora: ~/Downloads/squashfs - root / opt / pt / bin$
+
+
 
 // Middleware de erro 500
 app.use((err, req, res, next) => {

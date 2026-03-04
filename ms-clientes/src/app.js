@@ -9,7 +9,11 @@ app.use(cors())
 app.use(express.json())
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'ms-clientes', timestamp: new Date().toISOString() })
+    res.json({
+        status: "ok",
+        service: "ms-clientes",
+        timestamp: new Date()
+    })
 })
 
 app.use(clienteRoutes)

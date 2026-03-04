@@ -11,7 +11,7 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         service: 'ms-produtos',
-        timestamp: new Date().toISOString()
+        timestamp: new Date()
     })
 })
 

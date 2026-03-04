@@ -16,8 +16,12 @@ const createServiceProxy = (target, pathPattern, internalPath) => {
         pathRewrite: {
             [`^${pathPattern}`]: internalPath
         },
-        onProxyReq: (proxyReq, req, res) => {
-            // Garante que o log mostre o path original e o destino
+        onProxyReq: (proxyReq, req) => {
+            // Repassar x-api-key para os microserviços
+            if (req.headers["x-api-key"]) {
+                proxyReq.setHeader("x-api-key", req.headers["x-api-key"])
+            }
+            // Logs aprimorados do proxy
             console.log(`[PROXY] ${req.method} ${req.originalUrl} -> ${target}${internalPath}`)
         },
         onError: (err, req, res) => {
@@ -31,29 +35,33 @@ const createServiceProxy = (target, pathPattern, internalPath) => {
     })
 }
 
-// Rota de Check do Gateway (Público)
+// Rota de saúde no gateway
 router.get('/health', (req, res) => {
     res.json({
-        status: 'ok',
-        service: 'api-gateway',
-        timestamp: new Date().toISOString()
+        status: "ok",
+        service: "api-gateway",
+        timestamp: new Date()
     })
 })
 
-// Check de todos os microserviços (Público para monitoramento)
+// Rota de diagnóstico dos serviços
 router.get('/health/services', async (req, res) => {
     const services = [
-        { name: 'ms-clientes', url: `${env.CLIENTES_URL}/health` },
-        { name: 'ms-produtos', url: `${env.PRODUTOS_URL}/health` },
-        { name: 'ms-pedidos', url: `${env.PEDIDOS_URL}/health` }
+        { name: 'ms-clientes', url: `${env.CLIENTES_URL}/clientes` },
+        { name: 'ms-produtos', url: `${env.PRODUTOS_URL}/produtos` },
+        { name: 'ms-pedidos', url: `${env.PEDIDOS_URL}/pedidos` }
     ]
 
     const results = await Promise.all(services.map(async (s) => {
         try {
-            const response = await axios.get(s.url, { timeout: 2000 })
-            return { service: s.name, status: 'online', data: response.data }
+            // Note: Endpoints de negócio exigem API Key
+            const response = await axios.get(s.url, {
+                headers: { 'x-api-key': env.API_KEY || req.headers['x-api-key'] },
+                timeout: 3000
+            })
+            return { service: s.name, status: 'online', endpoint: s.url }
         } catch (error) {
-            return { service: s.name, status: 'offline', error: error.message }
+            return { service: s.name, status: 'offline', error: error.message, endpoint: s.url }
         }
     }))
 
