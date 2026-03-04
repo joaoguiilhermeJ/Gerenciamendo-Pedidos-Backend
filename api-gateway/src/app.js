@@ -5,7 +5,9 @@ const errorMiddleware = require('./middlewares/error.middleware')
 const gatewayRoutes = require('./routes/gateway.routes')
 const env = require('./config/env')
 
+
 const app = express()
+app.use(express.json())
 
 const allowedOrigins = [
   'http://localhost:5173',
