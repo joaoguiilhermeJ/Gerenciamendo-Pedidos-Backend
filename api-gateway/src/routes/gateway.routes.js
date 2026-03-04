@@ -15,32 +15,35 @@ const fixRequestBody = (proxyReq, req) => {
   proxyReq.write(bodyData)
 }
 
+// CLIENTES
 router.use(
   '/v1/customers',
   createProxyMiddleware({
     target: env.CLIENTES_URL,
     changeOrigin: true,
-    pathRewrite: { '^/api/v1/customers': '/clientes' },
+    pathRewrite: { '^/v1/customers': '/clientes' },
     onProxyReq: fixRequestBody
   })
 )
 
+// PRODUTOS
 router.use(
   '/v1/products',
   createProxyMiddleware({
     target: env.PRODUTOS_URL,
     changeOrigin: true,
-    pathRewrite: { '^/api/v1/products': '/produtos' },
+    pathRewrite: { '^/v1/products': '/produtos' },
     onProxyReq: fixRequestBody
   })
 )
 
+// PEDIDOS
 router.use(
   '/v1/orders',
   createProxyMiddleware({
     target: env.PEDIDOS_URL,
     changeOrigin: true,
-    pathRewrite: { '^/api/v1/orders': '/pedidos' },
+    pathRewrite: { '^/v1/orders': '/pedidos' },
     onProxyReq: fixRequestBody
   })
 )
