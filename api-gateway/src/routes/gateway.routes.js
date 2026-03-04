@@ -20,7 +20,7 @@ router.use(
   createProxyMiddleware({
     target: env.CLIENTES_URL,
     changeOrigin: true,
-    pathRewrite: { '^/v1/customers': '/clientes' },
+    pathRewrite: { '^/api/v1/customers': '/clientes' },
     onProxyReq: fixRequestBody
   })
 )
@@ -30,7 +30,7 @@ router.use(
   createProxyMiddleware({
     target: env.PRODUTOS_URL,
     changeOrigin: true,
-    pathRewrite: { '^/v1/products': '/produtos' },
+    pathRewrite: { '^/api/v1/products': '/produtos' },
     onProxyReq: fixRequestBody
   })
 )
@@ -40,7 +40,7 @@ router.use(
   createProxyMiddleware({
     target: env.PEDIDOS_URL,
     changeOrigin: true,
-    pathRewrite: { '^/v1/orders': '/pedidos' },
+    pathRewrite: { '^/api/v1/orders': '/pedidos' },
     onProxyReq: fixRequestBody
   })
 )
