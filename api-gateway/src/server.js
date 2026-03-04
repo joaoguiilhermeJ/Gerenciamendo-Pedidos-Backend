@@ -1,11 +1,9 @@
+require('dotenv').config()
+
 const app = require('./app')
-const env = require('./config/env')
 
-const PORT = env.PORT
+const PORT = process.env.PORT || 10000
 
-app.listen(PORT, () => {
-    console.log(` API Gateway rodando na porta ${PORT}`)
-    console.log(` Clientes: ${env.CLIENTES_URL}`)
-    console.log(` Produtos: ${env.PRODUTOS_URL}`)
-    console.log(`Pedidos:  ${env.PEDIDOS_URL}`)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`API Gateway rodando na porta ${PORT}`)
 })

@@ -1,43 +1,34 @@
 const express = require('express')
 const cors = require('cors')
+
+const routes = require('./routes/gateway.routes')
 const loggerMiddleware = require('./middlewares/logger.middleware')
 const errorMiddleware = require('./middlewares/error.middleware')
-const gatewayRoutes = require('./routes/gateway.routes')
-const env = require('./config/env')
-
 
 const app = express()
+
+// Parser JSON
 app.use(express.json())
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  env.FRONTEND_URL
-].filter(Boolean)
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true)
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true)
-    }
-
-    return callback(new Error('Not allowed by CORS'))
-  }
-}))
-
-app.use(express.json())
+// Logger de requisições
 app.use(loggerMiddleware)
 
-app.use('/api', gatewayRoutes)
+// CORS para permitir acesso do frontend no Vercel
+app.use(cors({
+  origin: [
+    'https://gerenciamento-pedidos.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-api-key']
+}))
 
-app.use((req, res) => {
-  res.status(404).json({
-    error: true,
-    message: 'Rota não encontrada no API Gateway'
-  })
-})
+// Permitir preflight requests
+app.options('*', cors())
 
+// Rotas do API Gateway
+app.use('/api', routes)
+
+// Middleware de erro global
 app.use(errorMiddleware)
 
 module.exports = app
