@@ -1,8 +1,8 @@
+const express = require('express')
 const { createProxyMiddleware } = require('http-proxy-middleware')
+const env = require('../config/env')
 
-const customersService = process.env.CUSTOMERS_SERVICE
-const productsService = process.env.PRODUCTS_SERVICE
-const ordersService = process.env.ORDERS_SERVICE
+const router = express.Router()
 
 const fixRequestBody = (proxyReq, req) => {
   if (!req.body || !Object.keys(req.body).length) return
@@ -15,35 +15,34 @@ const fixRequestBody = (proxyReq, req) => {
   proxyReq.write(bodyData)
 }
 
-const customersProxy = createProxyMiddleware({
-  target: customersService,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/v1/customers': '/clientes'
-  },
-  onProxyReq: fixRequestBody
-})
+router.use(
+  '/v1/customers',
+  createProxyMiddleware({
+    target: env.CLIENTES_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/v1/customers': '/clientes' },
+    onProxyReq: fixRequestBody
+  })
+)
 
-const productsProxy = createProxyMiddleware({
-  target: productsService,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/v1/products': '/produtos'
-  },
-  onProxyReq: fixRequestBody
-})
+router.use(
+  '/v1/products',
+  createProxyMiddleware({
+    target: env.PRODUTOS_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/v1/products': '/produtos' },
+    onProxyReq: fixRequestBody
+  })
+)
 
-const ordersProxy = createProxyMiddleware({
-  target: ordersService,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/v1/orders': '/pedidos'
-  },
-  onProxyReq: fixRequestBody
-})
+router.use(
+  '/v1/orders',
+  createProxyMiddleware({
+    target: env.PEDIDOS_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/v1/orders': '/pedidos' },
+    onProxyReq: fixRequestBody
+  })
+)
 
-module.exports = {
-  customersProxy,
-  productsProxy,
-  ordersProxy
-}
+module.exports = router
