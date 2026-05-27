@@ -1,4 +1,4 @@
-const pedidosService = require('../service/pedido.service')
+import pedidosService from '../service/pedido.service.js';
 
 async function criar_pedido(req, res) {
   try {
@@ -10,10 +10,8 @@ async function criar_pedido(req, res) {
     })
     return res.status(201).json(novoPedido)
   } catch (err) {
-    console.error('ERRO CRITICO AO CRIAR PEDIDO:', err)
-    return res.status(500).json({
-      erro: 'Erro interno ao processar o pedido.',
-      mensagem: err.message,
+    return res.status(400).json({
+      erro: err.message,
     })
   }
 }
@@ -75,11 +73,11 @@ async function entregar_pedido(req, res) {
   }
 }
 
-module.exports = {
+export default {
   criar_pedido,
   listar_todos,
   listar_por_cliente,
   cancelar_pedido,
   atualizar_pedido,
   entregar_pedido
-}
+};

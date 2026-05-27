@@ -1,4 +1,4 @@
-const { Sequelize } = require('sequelize')
+import { Sequelize } from 'sequelize'
 
 // use DATABASE_URL and Neon SSL fallback to sqlite in absence of URL
 const connectionString = process.env.DATABASE_URL || 'sqlite::memory:'
@@ -31,4 +31,4 @@ const testConnection = async () => {
 
 testConnection()
 
-module.exports = sequelize
+export default sequelize

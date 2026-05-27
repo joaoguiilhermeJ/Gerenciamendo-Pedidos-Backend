@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "ms-pedidos",
   "version": "1.0.0",
   "scripts": {
@@ -13,7 +14,8 @@
     "pg": "^8.19.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   }
 }

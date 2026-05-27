@@ -1,14 +1,11 @@
-const clientesService = require('../service/cliente.service')
+import clientesService from '../service/cliente.service.js';
 
 async function cadastrar_cliente(req, res) {
     try {
-        console.log('Dados recebidos no Body:', req.body)
         const cliente = await clientesService.cadastrar_cliente(req.body)
-        console.log('Resultado do Service:', cliente)
         return res.status(201).json(cliente)
     } catch (err) {
         const mensagem = err.errors ? err.errors[0].message : err.message
-        console.error('Erro detalhado:', mensagem)
         return res.status(400).json({ erro: mensagem })
     }
 }
@@ -67,10 +64,10 @@ async function deletar_cliente(req, res) {
     }
 }
 
-module.exports = {
+export default {
     cadastrar_cliente,
     listar_clientes,
     buscar_cliente,
     atualizar_cliente,
     deletar_cliente
-}
+};

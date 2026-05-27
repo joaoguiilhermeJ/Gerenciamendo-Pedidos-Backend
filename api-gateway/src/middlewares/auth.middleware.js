@@ -1,4 +1,4 @@
-const env = require('../config/env')
+import env from '../config/env.js'
 
 const authMiddleware = (req, res, next) => {
     const apiKey = req.header('x-api-key')
@@ -13,4 +13,5 @@ const authMiddleware = (req, res, next) => {
     next()
 }
 
-module.exports = authMiddleware
+export default authMiddleware
+

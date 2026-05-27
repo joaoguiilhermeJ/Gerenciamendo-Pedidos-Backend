@@ -1,6 +1,7 @@
-const axios = require("axios");
-const pedidoRepository = require("../repositories/pedido.repository");
-const sequelize = require("../config/database");
+import axios from "axios";
+import pedidoRepository from "../repositories/pedido.repository.js";
+import sequelize from "../config/database.js";
+import SimpleCache from "../utils/cache.js";
 
 const MS_CLIENTES =
   (process.env.CLIENTES_URL || "http://localhost:3001").replace(/\/$/, "") +
@@ -15,6 +16,30 @@ const getAuthHeader = () => ({
   timeout: 10000, // 10 segundos de timeout
 });
 
+// Caches locais para reduzir chamadas HTTP externas
+const clientCache = new SimpleCache(30000); // 30s
+const productCache = new SimpleCache(30000); // 30s
+
+async function fetchClientById(id) {
+  const key = `client:${id}`;
+  const cached = clientCache.get(key);
+  if (cached) return cached;
+
+  const resp = await axios.get(`${MS_CLIENTES}/${id}`, getAuthHeader());
+  clientCache.set(key, resp.data);
+  return resp.data;
+}
+
+async function fetchProductById(id) {
+  const key = `product:${id}`;
+  const cached = productCache.get(key);
+  if (cached) return cached;
+
+  const resp = await axios.get(`${MS_PRODUTOS}/${id}`, getAuthHeader());
+  productCache.set(key, resp.data);
+  return resp.data;
+}
+
 async function criar_pedido(dados) {
   const { idCliente, itens, local } = dados;
 
@@ -22,113 +47,115 @@ async function criar_pedido(dados) {
     throw new Error("O pedido deve conter pelo menos um item.");
   }
 
-  // valida cliente primeiro
+  // valida cliente primeiro (usando cache)
   try {
-    const clienteUrl = `${MS_CLIENTES}/${idCliente}`;
-    console.log("[PEDIDO SERVICE] Validando cliente URL:", clienteUrl);
-    console.log("[PEDIDO SERVICE] API_KEY configurada:", !!process.env.API_KEY);
-
-    const response = await axios.get(clienteUrl, getAuthHeader());
-    console.log("[PEDIDO SERVICE] Resposta cliente:", response.data);
+    await fetchClientById(idCliente);
   } catch (error) {
-    console.error("[PEDIDO SERVICE] Erro ao validar cliente:", {
-      url: `${MS_CLIENTES}/${idCliente}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      message: error.message,
-      code: error.code,
-      data: error.response?.data,
-    });
     throw new Error(
       "Falha ao validar cliente: Cliente não encontrado ou serviço fora do ar.",
     );
   }
 
-  const t = await sequelize.transaction();
-
   try {
+    // Busca informações de todos os produtos em paralelo (com cache)
+    const validacoes = itens.map(async (item) => {
+      try {
+        const produto = await fetchProductById(item.idProduto);
+        return { item, produto };
+      } catch (e) {
+        throw new Error(
+          `Produto ${item.idProduto} não encontrado ou serviço fora do ar.`,
+        );
+      }
+    });
+
+    const resultados = await Promise.all(validacoes);
+
     let valorTotal = 0;
     const itensParaSalvar = [];
 
-    for (const item of itens) {
-      const { idProduto, quantidade } = item;
-
-      let produto;
-      try {
-        const produtoUrl = `${MS_PRODUTOS}/${idProduto}`;
-        console.log("[PEDIDO SERVICE] Validando produto URL:", produtoUrl);
-
-        const response = await axios.get(produtoUrl, getAuthHeader());
-        produto = response.data;
-        console.log("[PEDIDO SERVICE] Resposta produto:", produto);
-      } catch (error) {
-        console.error("[PEDIDO SERVICE] Erro ao validar produto:", {
-          url: `${MS_PRODUTOS}/${idProduto}`,
-          status: error.response?.status,
-          message: error.message,
-          code: error.code,
-        });
-        throw new Error(
-          `Produto ${idProduto} não encontrado ou serviço fora do ar.`,
-        );
-      }
-
-      if (produto.estoque < quantidade) {
+    for (const { item, produto } of resultados) {
+      if (produto.estoque < item.quantidade) {
         throw new Error(
           `Estoque insuficiente para o produto ${produto.nome}. Disponível: ${produto.estoque}`,
         );
       }
 
       const precoUnitario = Number(produto.preco) || 0;
-      valorTotal += precoUnitario * quantidade;
+      valorTotal += precoUnitario * item.quantidade;
 
       itensParaSalvar.push({
-        idProduto,
-        quantidade,
+        idProduto: item.idProduto,
+        quantidade: item.quantidade,
         precoUnitario,
-        produtoInfo: produto, // Para atualizar o estoque depois
+        novoEstoque: produto.estoque - item.quantidade,
       });
     }
 
-    const novoPedido = await pedidoRepository.criar(
-      {
-        idCliente,
-        valorTotal,
-        local,
-        status: "PENDENTE",
-      },
-      t,
-    );
+    const t = await sequelize.transaction();
 
-    for (const item of itensParaSalvar) {
-      await pedidoRepository.criarItem(
+    try {
+      const novoPedido = await pedidoRepository.criar(
         {
-          idPedido: novoPedido.idPedido,
-          idProduto: item.idProduto,
-          quantidade: item.quantidade,
-          precoUnitario: item.precoUnitario,
+          idCliente,
+          valorTotal,
+          local,
+          status: "PENDENTE",
         },
         t,
       );
 
-      // Atualiza estoque (Opcional: fazer fora da transação se o MS de produtos for externo)
-      try {
-        await axios.patch(
-          `${MS_PRODUTOS}/${item.idProduto}`,
-          { estoque: item.produtoInfo.estoque - item.quantidade },
-          getAuthHeader(),
-        );
-      } catch (error) {
-        console.error(
-          `Aviso: Falha ao atualizar estoque do produto ${item.idProduto}`,
-        );
-      }
-    }
+      // Criar itens do pedido
+      await Promise.all(
+        itensParaSalvar.map((item) =>
+          pedidoRepository.criarItem(
+            {
+              idPedido: novoPedido.idPedido,
+              idProduto: item.idProduto,
+              quantidade: item.quantidade,
+              precoUnitario: item.precoUnitario,
+            },
+            t,
+          ),
+        ),
+      );
 
-    await t.commit();
-    return await pedidoRepository.buscarPorId(novoPedido.idPedido);
+      // Atualiza estoque no MS de produtos e atualiza cache local quando possível
+      // Nota: Idealmente isso seria via saga ou outbox, mas mantendo a lógica atual síncrona/paralela
+      await Promise.all(
+        itensParaSalvar.map(async (item) => {
+          try {
+            const resp = await axios.patch(
+              `${MS_PRODUTOS}/${item.idProduto}`,
+              { estoque: item.novoEstoque },
+              getAuthHeader(),
+            );
+            // atualiza cache local com a resposta (se retornou o produto atualizado)
+            if (resp && resp.data) {
+              productCache.set(`product:${item.idProduto}`, resp.data);
+            } else {
+              // se não houver corpo, apenas atualizar campo estoque parcial no cache
+              const cached = productCache.get(`product:${item.idProduto}`);
+              if (cached) {
+                cached.estoque = item.novoEstoque;
+                productCache.set(`product:${item.idProduto}`, cached);
+              }
+            }
+          } catch (err) {
+            console.error(
+              `Falha ao sincronizar estoque do produto ${item.idProduto}`,
+            );
+          }
+        }),
+      );
+
+      await t.commit();
+      return pedidoRepository.buscarPorId(novoPedido.idPedido);
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
   } catch (error) {
-    await t.rollback();
     throw error;
   }
 }
@@ -180,30 +207,42 @@ async function cancelar_pedido(id) {
   if (pedido.status === "CANCELADO")
     throw new Error("Pedido já está cancelado.");
 
-  // Devolver estoque para cada item
-  if (pedido.itens) {
-    for (const item of pedido.itens) {
+  // Devolver estoque para cada item em paralelo
+  if (pedido.itens && pedido.itens.length > 0) {
+    const devolucoes = pedido.itens.map(async (item) => {
       try {
-        const respProd = await axios.get(
+        // tentar usar cache para obter produto
+        const produto = await fetchProductById(item.idProduto).catch(
+          () => null,
+        );
+        const novoEstoque =
+          (produto && produto.estoque ? produto.estoque : 0) + item.quantidade;
+        const resp = await axios.patch(
           `${MS_PRODUTOS}/${item.idProduto}`,
+          { estoque: novoEstoque },
           getAuthHeader(),
         );
-        const produto = respProd.data;
-        await axios.patch(
-          `${MS_PRODUTOS}/${item.idProduto}`,
-          { estoque: (produto.estoque || 0) + item.quantidade },
-          getAuthHeader(),
-        );
+        if (resp && resp.data) {
+          productCache.set(`product:${item.idProduto}`, resp.data);
+        } else {
+          const cached = productCache.get(`product:${item.idProduto}`);
+          if (cached) {
+            cached.estoque = novoEstoque;
+            productCache.set(`product:${item.idProduto}`, cached);
+          }
+        }
       } catch (e) {
         console.error(
-          `[PEDIDO SERVICE] Erro ao devolver estoque para o produto ${item.idProduto}:`,
+          `[PEDIDO SERVICE] Falha ao devolver estoque (Prod: ${item.idProduto}):`,
           e.message,
         );
       }
-    }
+    });
+
+    await Promise.all(devolucoes);
   }
 
-  return await pedidoRepository.atualizarStatus(id, "CANCELADO");
+  return pedidoRepository.atualizarStatus(id, "CANCELADO");
 }
 
 async function atualizar_pedido(id, updates) {
@@ -226,10 +265,10 @@ async function confirmar_entrega(id) {
   if (pedido.status !== "PENDENTE")
     throw new Error("Apenas pedidos pendentes podem ser entregues.");
 
-  return await pedidoRepository.atualizarStatus(id, "ENTREGUE");
+  return pedidoRepository.atualizarStatus(id, "ENTREGUE");
 }
 
-module.exports = {
+export default {
   criar_pedido,
   listar_pedidos,
   buscar_pedido,

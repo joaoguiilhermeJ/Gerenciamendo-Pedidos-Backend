@@ -73,3 +73,13 @@ export async function atualizar_estoque(req, res) {
     return res.status(400).json({ erro: mensagem });
   }
 }
+
+export default {
+  cadastrar_produto,
+  listar_produtos,
+  buscar_produto,
+  atualizar_produto,
+  deletar_produto,
+  atualizar_estoque
+};
+

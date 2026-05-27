@@ -30,3 +30,14 @@ export async function atualizar(id, updates) {
   await Pedido.update(updates, { where: { idPedido: id } });
   return await Pedido.findByPk(id, { include: ["itens"] });
 }
+
+export default {
+  criar,
+  criarItem,
+  listarTodos,
+  buscarPorId,
+  buscarPorCliente,
+  atualizarStatus,
+  atualizar
+};
+

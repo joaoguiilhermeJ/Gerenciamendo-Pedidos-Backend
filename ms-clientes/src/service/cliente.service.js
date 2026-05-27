@@ -1,9 +1,8 @@
-const clienteRepository = require('../repositories/cliente.repository')
+import clienteRepository from '../repositories/cliente.repository.js';
+import SimpleCache from '../utils/cache.js';
 
-function validarEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return re.test(email)
-}
+const clienteCache = new SimpleCache(30000); // 30 seconds TTL
+const ALL_CLIENTES_KEY = '@all';
 
 async function cadastrar_cliente(dados) {
     const nomeCliente = String(dados.nomeCliente ?? '').trim()
@@ -14,24 +13,39 @@ async function cadastrar_cliente(dados) {
         throw new Error('Campos obrigatórios ausentes')
     }
 
-    return await clienteRepository.cadastrar_cliente({
+    const novoCliente = await clienteRepository.cadastrar_cliente({
         nomeCliente,
         contato,
         documento
     })
+
+    // Invalida cache da lista
+    clienteCache.delete(ALL_CLIENTES_KEY);
+
+    return novoCliente;
 }
 
 async function listar_clientes() {
-    return await clienteRepository.listar_clientes()
+    const cached = clienteCache.get(ALL_CLIENTES_KEY);
+    if (cached) return cached;
+
+    const clientes = await clienteRepository.listar_clientes();
+    clienteCache.set(ALL_CLIENTES_KEY, clientes);
+
+    return clientes;
 }
 
 async function buscar_cliente(id) {
     const idCliente = Number(id)
     if (!Number.isInteger(idCliente) || idCliente <= 0) throw new Error('ID inválido')
 
+    const cached = clienteCache.get(idCliente);
+    if (cached) return cached;
+
     const result = await clienteRepository.buscar_cliente(idCliente)
     if (!result) throw new Error('Cliente não encontrado')
 
+    clienteCache.set(idCliente, result);
     return result
 }
 
@@ -44,20 +58,32 @@ async function atualizar_cliente(id, dados) {
     if (dados.contato) dadosAtualizar.contato = String(dados.contato).trim()
     if (dados.documento) dadosAtualizar.documento = String(dados.documento).trim()
 
-    return await clienteRepository.atualizar_cliente(idCliente, dadosAtualizar)
+    const cliente = await clienteRepository.atualizar_cliente(idCliente, dadosAtualizar)
+
+    // Invalida cache
+    clienteCache.delete(idCliente);
+    clienteCache.delete(ALL_CLIENTES_KEY);
+
+    return cliente;
 }
 
 async function deletar_cliente(id) {
     const idCliente = Number(id)
     if (!Number.isInteger(idCliente) || idCliente <= 0) throw new Error('ID inválido')
 
-    return await clienteRepository.deletar_cliente(idCliente)
+    const result = await clienteRepository.deletar_cliente(idCliente)
+
+    // Invalida cache
+    clienteCache.delete(idCliente);
+    clienteCache.delete(ALL_CLIENTES_KEY);
+
+    return result;
 }
 
-module.exports = {
+export default {
     cadastrar_cliente,
     listar_clientes,
     buscar_cliente,
     atualizar_cliente,
     deletar_cliente
-}
+};

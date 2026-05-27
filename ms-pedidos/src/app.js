@@ -1,37 +1,30 @@
-const express = require('express')
-const cors = require('cors')
-const pedidosRoutes = require('./routes/pedido.routes')
+import express from "express";
+import cors from "cors";
+import pedidosRoutes from "./routes/pedido.routes.js";
+import { swaggerUi, specs } from "./swagger.js";
 
-const app = express()
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-app.use(cors())
-app.use(express.json())
+// Swagger Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'ms-pedidos',
-    timestamp: new Date()
-  })
-})
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", service: "ms-pedidos", timestamp: new Date() });
+});
 
-app.use('/pedidos', pedidosRoutes)
+app.use("/pedidos", pedidosRoutes);
 
-// 404
 app.use((req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: 'Rota não encontrada'
-  })
-})
+  res.status(404).json({ status: "error", message: "Rota não encontrada" });
+});
 
-// erro 500
 app.use((err, req, res, next) => {
-  console.error(err)
-  res.status(500).json({
-    status: 'error',
-    message: 'Erro interno do servidor'
-  })
-})
+  console.error(err);
+  res
+    .status(500)
+    .json({ status: "error", message: "Erro interno do servidor" });
+});
 
-module.exports = app
+export default app;

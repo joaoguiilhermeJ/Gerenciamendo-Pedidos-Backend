@@ -1,45 +1,58 @@
-const express = require('express')
-const { createProxyMiddleware } = require('http-proxy-middleware')
-const env = require('../config/env')
+import express from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import authMiddleware from "../middlewares/auth.middleware.js";
+import env from "../config/env.js";
 
-const router = express.Router()
+const router = express.Router();
 
+/**
+ * Corrige o corpo da requisição JSON para o proxy.
+ */
 const fixRequestBody = (proxyReq, req) => {
-  if (!req.body || !Object.keys(req.body).length) return
+  if (!req.body || !Object.keys(req.body).length) return;
 
-  const bodyData = JSON.stringify(req.body)
+  const bodyData = JSON.stringify(req.body);
 
-  proxyReq.setHeader('Content-Type', 'application/json')
-  proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData))
+  proxyReq.setHeader("Content-Type", "application/json");
+  proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
 
-  proxyReq.write(bodyData)
-}
+  proxyReq.write(bodyData);
+};
 
-router.use('/customers',
-  createProxyMiddleware({
-    target: env.CLIENTES_URL,
+/**
+ * Cria um proxy para um microserviço com o mapeamento correto de path.
+ */
+const createServiceProxy = (apiPath, internalPath, targetUrl) => {
+  return createProxyMiddleware(apiPath, {
+    target: targetUrl,
     changeOrigin: true,
-    pathRewrite: { '^/customers': '/clientes' },
-    onProxyReq: fixRequestBody
-  })
-)
+    pathRewrite: {
+      [`^${apiPath}`]: internalPath,
+    },
+    onProxyReq: fixRequestBody,
+    onError: (err, req, res) => {
+      console.error(
+        `[GATEWAY] Erro ao conectar com ${internalPath}:`,
+        err.message,
+      );
+      res
+        .status(502)
+        .json({ status: "error", message: "Serviço indisponível" });
+    },
+  });
+};
 
-router.use('/products',
-  createProxyMiddleware({
-    target: env.PRODUTOS_URL,
-    changeOrigin: true,
-    pathRewrite: { '^/products': '/produtos' },
-    onProxyReq: fixRequestBody
-  })
-)
+// ✅ SEGURANÇA: Camada de proteção adicional (defesa em profundidade)
+router.use(authMiddleware);
 
-router.use('/orders',
-  createProxyMiddleware({
-    target: env.PEDIDOS_URL,
-    changeOrigin: true,
-    pathRewrite: { '^/orders': '/pedidos' },
-    onProxyReq: fixRequestBody
-  })
-)
+// Configuração das rotas conforme exigido
+// Mapeia /api/clientes -> /clientes no target http://localhost:3001
+router.use(createServiceProxy("/api/clientes", "/clientes", env.CLIENTES_URL));
 
-module.exports = router
+// Mapeia /api/produtos -> /produtos no target http://localhost:3002
+router.use(createServiceProxy("/api/produtos", "/produtos", env.PRODUTOS_URL));
+
+// Mapeia /api/pedidos -> /pedidos no target http://localhost:3003
+router.use(createServiceProxy("/api/pedidos", "/pedidos", env.PEDIDOS_URL));
+
+export default router;

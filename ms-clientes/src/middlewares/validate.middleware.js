@@ -8,4 +8,4 @@ function validarID(req, res, next) {
     next()
 }
 
-module.exports = { validarID }
+export { validarID };

@@ -1,4 +1,4 @@
-const { Cliente } = require('../model/Cliente')
+import { Cliente } from '../model/Cliente.js';
 
 async function cadastrar_cliente(dados) {
     return await Cliente.create(dados)
@@ -26,10 +26,10 @@ async function deletar_cliente(id) {
     return null
 }
 
-module.exports = {
+export default {
     cadastrar_cliente,
     listar_clientes,
     buscar_cliente,
     atualizar_cliente,
     deletar_cliente
-}
+};

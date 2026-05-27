@@ -1,4 +1,8 @@
 import * as produtoRepository from "../repositories/produto.repository.js";
+import SimpleCache from "../utils/cache.js";
+
+const productCache = new SimpleCache(30000); // 30 seconds TTL
+const ALL_PRODUCTS_KEY = "@all";
 
 export async function cadastrar_produto(dados) {
   const nome = String(dados.nome ?? "").trim();
@@ -10,11 +14,22 @@ export async function cadastrar_produto(dados) {
     throw new Error("Nome e preço válidos são obrigatórios.");
   }
 
-  return await produtoRepository.criar_produto({ nome, preco, estoque, categoria });
+  const novoProduto = await produtoRepository.criar_produto({ nome, preco, estoque, categoria });
+  
+  // Invalida cache da lista ao cadastrar novo
+  productCache.delete(ALL_PRODUCTS_KEY);
+  
+  return novoProduto;
 }
 
 export async function listar_produtos() {
-  return await produtoRepository.listar_produtos();
+  const cached = productCache.get(ALL_PRODUCTS_KEY);
+  if (cached) return cached;
+
+  const produtos = await produtoRepository.listar_produtos();
+  productCache.set(ALL_PRODUCTS_KEY, produtos);
+  
+  return produtos;
 }
 
 export async function buscar_produto(id) {
@@ -22,8 +37,13 @@ export async function buscar_produto(id) {
   if (!Number.isInteger(idProduto) || idProduto <= 0)
     throw new Error("ID inválido");
 
+  const cached = productCache.get(idProduto);
+  if (cached) return cached;
+
   const produto = await produtoRepository.buscar_produto(idProduto);
   if (!produto) throw new Error("Produto não encontrado");
+  
+  productCache.set(idProduto, produto);
   return produto;
 }
 
@@ -38,7 +58,13 @@ export async function atualizar_produto(id, dados) {
   if (dados.estoque !== undefined) updates.estoque = Number(dados.estoque);
   if (dados.categoria !== undefined) updates.categoria = dados.categoria ? String(dados.categoria).trim() : null;
 
-  return await produtoRepository.atualizar_produto(idProduto, updates);
+  const produto = await produtoRepository.atualizar_produto(idProduto, updates);
+  
+  // Invalida cache
+  productCache.delete(idProduto);
+  productCache.delete(ALL_PRODUCTS_KEY);
+  
+  return produto;
 }
 
 export async function deletar_produto(id) {
@@ -46,7 +72,13 @@ export async function deletar_produto(id) {
   if (!Number.isInteger(idProduto) || idProduto <= 0)
     throw new Error("ID inválido");
 
-  return await produtoRepository.deletar_produto(idProduto);
+  const result = await produtoRepository.deletar_produto(idProduto);
+  
+  // Invalida cache
+  productCache.delete(idProduto);
+  productCache.delete(ALL_PRODUCTS_KEY);
+  
+  return result;
 }
 
 export async function atualizar_estoque(id, quantidade) {
@@ -63,5 +95,11 @@ export async function atualizar_estoque(id, quantidade) {
 
   produto.estoque = quantidade;
   await produto.save();
+  
+  // Invalida cache
+  productCache.delete(idProduto);
+  productCache.delete(ALL_PRODUCTS_KEY);
+  
   return produto;
 }
+

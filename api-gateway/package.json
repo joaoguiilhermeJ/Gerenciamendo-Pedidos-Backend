@@ -1,7 +1,8 @@
 {
-    "name": "api-gateway",
-    "version": "1.0.0",
-    "description": "API Gateway for Sistema Pedidos",
+  "type": "module",
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "description": "API Gateway for Sistema Pedidos",
     "main": "src/server.js",
     "scripts": {
         "start": "node src/server.js",
