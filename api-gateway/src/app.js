@@ -13,8 +13,7 @@ app.set('trust proxy', 1);
 
 const corsOptions = {
   origin: [
-    "https://gerenciamento-pedidos.vercel.app",
-    "https://gerenciamento-pedido.vercel.app" 
+    "https://gerenciamendo-pedidos-frontend-9btj03oty.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-api-key"],
