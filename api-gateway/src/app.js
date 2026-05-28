@@ -8,24 +8,35 @@ import errorMiddleware from "./middlewares/error.middleware.js";
 
 const app = express();
 
-app.use(express.json());
 
-app.use(loggerMiddleware);
+app.set('trust proxy', 1);
 
 const corsOptions = {
-  origin: ["https://gerenciamento-pedidos.vercel.app"],
+  origin: [
+    "https://gerenciamento-pedidos.vercel.app",
+    "https://gerenciamento-pedido.vercel.app" 
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-api-key"],
   credentials: true,
 };
 
-app.use(cors(corsOptions));
 
-// responder corretamente preflight requests
+app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-// ✅ SEGURANÇA: Validar API Key em TODAS as requisições
-app.use(authMiddleware);
+// 4. Middlewares de parsing e log vêm logo após a liberação do CORS
+app.use(express.json());
+app.use(loggerMiddleware);
+
+
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  authMiddleware(req, res, next);
+});
+
 
 app.use("/", routes);
 
