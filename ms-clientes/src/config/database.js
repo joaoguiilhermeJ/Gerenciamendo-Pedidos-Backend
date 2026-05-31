@@ -3,9 +3,10 @@ import { Sequelize } from 'sequelize';
 // use DATABASE_URL and Neon SSL fallback to sqlite for local development
 const connectionString = process.env.DATABASE_URL || 'sqlite::memory:'
 const isPostgres = Boolean(process.env.DATABASE_URL)
+const isLocalhost = isPostgres && (connectionString.includes('localhost') || connectionString.includes('127.0.0.1'))
 const sequelize = new Sequelize(connectionString, {
   dialect: isPostgres ? 'postgres' : 'sqlite',
-  dialectOptions: isPostgres
+  dialectOptions: isPostgres && !isLocalhost
     ? {
       ssl: {
         require: true,
