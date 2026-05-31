@@ -136,6 +136,41 @@ router.post(
 /**
  * @swagger
  * /pedidos/{id}:
+ *   get:
+ *     summary: Buscar pedido por ID
+ *     tags: [Pedidos]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *         description: ID do pedido
+ *     responses:
+ *       200:
+ *         description: Pedido encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pedido'
+ *       404:
+ *         description: Pedido não encontrado
+ *       401:
+ *         description: API Key inválida
+ */
+router.get(
+  "/:id",
+  validateApiKey,
+  validarID,
+  pedidoController.buscar_por_id,
+);
+
+/**
+ * @swagger
+ * /pedidos/{id}:
  *   delete:
  *     summary: Cancelar pedido (devolver estoque para todos os itens)
  *     tags: [Pedidos]

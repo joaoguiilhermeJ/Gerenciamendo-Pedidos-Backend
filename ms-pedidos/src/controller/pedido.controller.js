@@ -35,6 +35,16 @@ async function listar_por_cliente(req, res) {
   }
 }
 
+async function buscar_por_id(req, res) {
+  try {
+    const { id } = req.params;
+    const pedido = await pedidosService.buscar_pedido(id);
+    return res.status(200).json(pedido);
+  } catch (err) {
+    return res.status(404).json({ erro: err.message });
+  }
+}
+
 async function cancelar_pedido(req, res) {
   try {
     const { id } = req.params
@@ -77,6 +87,7 @@ export default {
   criar_pedido,
   listar_todos,
   listar_por_cliente,
+  buscar_por_id,
   cancelar_pedido,
   atualizar_pedido,
   entregar_pedido
