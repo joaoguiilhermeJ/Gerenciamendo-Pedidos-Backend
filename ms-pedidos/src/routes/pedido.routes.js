@@ -98,6 +98,36 @@ router.get(
 
 /**
  * @swagger
+ * /pedidos/{id}:
+ *   get:
+ *     summary: Buscar pedido por ID
+ *     tags: [Pedidos]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *         description: ID do pedido
+ *     responses:
+ *       200:
+ *         description: Detalhes do pedido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pedido'
+ *       404:
+ *         description: Pedido não encontrado
+ *       401:
+ *         description: API Key inválida
+ */
+router.get("/:id", validateApiKey, validarID, pedidoController.buscar_pedido);
+
+/**
+ * @swagger
  * /pedidos/{id}/entregar:
  *   post:
  *     summary: Confirmar entrega do pedido (mudar status para ENTREGUE)
@@ -178,7 +208,7 @@ router.delete(
  * @swagger
  * /pedidos/{id}:
  *   put:
- *     summary: Atualizar pedido (ex: local de entrega)
+ *     summary: "Atualizar pedido (ex: local de entrega)"
  *     tags: [Pedidos]
  *     security:
  *       - ApiKeyAuth: []

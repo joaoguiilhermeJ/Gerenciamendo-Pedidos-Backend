@@ -26,6 +26,8 @@ const createServiceProxy = (apiPath, internalPath, targetUrl) => {
   return createProxyMiddleware(apiPath, {
     target: targetUrl,
     changeOrigin: true,
+    timeout: 15000, // 15 segundos - tempo suficiente para o banco responder
+    proxyTimeout: 15000,
     pathRewrite: {
       [`^${apiPath}`]: internalPath,
     },
@@ -37,7 +39,11 @@ const createServiceProxy = (apiPath, internalPath, targetUrl) => {
       );
       res
         .status(502)
-        .json({ status: "error", message: "Serviço indisponível" });
+        .json({ 
+          status: "error", 
+          message: "Serviço indisponível",
+          details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     },
   });
 };
